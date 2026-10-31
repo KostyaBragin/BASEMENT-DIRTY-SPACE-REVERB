@@ -36,6 +36,10 @@ public:
 
 private:
     juce::dsp::Reverb reverb;
+    juce::IIRFilter lowCutFilters[2];
+    juce::IIRFilter highCutFilters[2];
+    float lastLowCutHz = -1.0f;
+    float lastHighCutHz = -1.0f;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> preDelayLine;
     juce::dsp::Reverb::Parameters reverbParameters;
     juce::AudioBuffer<float> dryBuffer;
