@@ -36,14 +36,69 @@ BasementAudioProcessor::BasementAudioProcessor()
 {
 }
 
-void BasementAudioProcessor::prepareToPlay(double, int) {}
-void BasementAudioProcessor::releaseResources() {}
+void BasementAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+{
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
+
+    reverb.prepare(spec);
+    reverb.reset();
+    dryBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
+}
+
+void BasementAudioProcessor::releaseResources()
+{
+    reverb.reset();
+}
 
 void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
+
+    const int numSamples = buffer.getNumSamples();
+    const int numChannels = juce::jmin(buffer.getNumChannels(), getTotalNumInputChannels());
+
     for (int channel = getTotalNumInputChannels(); channel < getTotalNumOutputChannels(); ++channel)
-        buffer.clear(channel, 0, buffer.getNumSamples());
+        buffer.clear(channel, 0, numSamples);
+
+    if (numChannels == 0)
+        return;
+
+    if (dryBuffer.getNumChannels() != buffer.getNumChannels()
+        || dryBuffer.getNumSamples() < numSamples)
+        dryBuffer.setSize(buffer.getNumChannels(), numSamples, false, false, true);
+
+    for (int channel = 0; channel < numChannels; ++channel)
+        dryBuffer.copyFrom(channel, 0, buffer, channel, 0, numSamples);
+
+    const float decay = parameters.getRawParameterValue("decay")->load();
+    const float size = parameters.getRawParameterValue("size")->load() * 0.01f;
+    const float damping = parameters.getRawParameterValue("damping")->load() * 0.01f;
+    const float width = parameters.getRawParameterValue("width")->load() * 0.005f;
+    const float mix = parameters.getRawParameterValue("mix")->load() * 0.01f;
+
+    reverbParameters.roomSize = juce::jlimit(0.05f, 0.98f,
+        0.18f + size * 0.48f + (decay / 12.0f) * 0.30f);
+    reverbParameters.damping = juce::jlimit(0.0f, 1.0f, damping);
+    reverbParameters.width = juce::jlimit(0.0f, 1.0f, width);
+    reverbParameters.wetLevel = 1.0f;
+    reverbParameters.dryLevel = 0.0f;
+    reverbParameters.freezeMode = 0.0f;
+    reverb.setParameters(reverbParameters);
+
+    juce::dsp::AudioBlock<float> audioBlock(buffer);
+    reverb.process(juce::dsp::ProcessContextReplacing<float>(audioBlock));
+
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        auto* output = buffer.getWritePointer(channel);
+        const auto* dry = dryBuffer.getReadPointer(channel);
+
+        for (int sample = 0; sample < numSamples; ++sample)
+            output[sample] = dry[sample] * (1.0f - mix) + output[sample] * mix;
+    }
 }
 
 void BasementAudioProcessor::loadPreset(int index)
