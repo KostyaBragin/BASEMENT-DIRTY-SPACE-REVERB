@@ -99,6 +99,7 @@ void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const float mix = parameters.getRawParameterValue("mix")->load() * 0.01f;
     const float lowCutHz = parameters.getRawParameterValue("lowcut")->load();
     const float highCutHz = parameters.getRawParameterValue("highcut")->load();
+    const float dirt = parameters.getRawParameterValue("dirt")->load() * 0.01f;
 
     preDelayLine.setDelay(preDelayMs * static_cast<float>(getSampleRate()) * 0.001f);
 
@@ -150,6 +151,20 @@ void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         auto* wet = buffer.getWritePointer(channel);
         lowCutFilters[channel].processSamples(wet, numSamples);
         highCutFilters[channel].processSamples(wet, numSamples);
+
+        // Gentle, controllable saturation on the reverb signal only.
+        if (dirt > 0.0f)
+        {
+            const float drive = 1.0f + dirt * 4.0f;
+            const float blend = dirt * 0.85f;
+            const float normalizer = std::tanh(drive);
+            for (int sample = 0; sample < numSamples; ++sample)
+            {
+                const float dryWetSample = wet[sample];
+                const float saturated = std::tanh(dryWetSample * drive) / normalizer;
+                wet[sample] = dryWetSample + (saturated - dryWetSample) * blend;
+            }
+        }
     }
 
     for (int channel = 0; channel < numChannels; ++channel)
