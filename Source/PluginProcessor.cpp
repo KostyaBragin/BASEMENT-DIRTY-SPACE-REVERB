@@ -43,6 +43,11 @@ void BasementAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
     spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
 
+    preDelayLine.setMaximumDelayInSamples(
+        juce::jmax(1, static_cast<int>(sampleRate * 0.2) + 1));
+    preDelayLine.prepare(spec);
+    preDelayLine.reset();
+
     reverb.prepare(spec);
     reverb.reset();
     dryBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
@@ -50,6 +55,7 @@ void BasementAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
 
 void BasementAudioProcessor::releaseResources()
 {
+    preDelayLine.reset();
     reverb.reset();
 }
 
@@ -74,10 +80,23 @@ void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         dryBuffer.copyFrom(channel, 0, buffer, channel, 0, numSamples);
 
     const float decay = parameters.getRawParameterValue("decay")->load();
+    const float preDelayMs = parameters.getRawParameterValue("predelay")->load();
     const float size = parameters.getRawParameterValue("size")->load() * 0.01f;
     const float damping = parameters.getRawParameterValue("damping")->load() * 0.01f;
     const float width = parameters.getRawParameterValue("width")->load() * 0.005f;
     const float mix = parameters.getRawParameterValue("mix")->load() * 0.01f;
+
+    preDelayLine.setDelay(preDelayMs * static_cast<float>(getSampleRate()) * 0.001f);
+
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        auto* wetInput = buffer.getWritePointer(channel);
+        for (int sample = 0; sample < numSamples; ++sample)
+        {
+            preDelayLine.pushSample(channel, wetInput[sample]);
+            wetInput[sample] = preDelayLine.popSample(channel);
+        }
+    }
 
     reverbParameters.roomSize = juce::jlimit(0.05f, 0.98f,
         0.18f + size * 0.48f + (decay / 12.0f) * 0.30f);
