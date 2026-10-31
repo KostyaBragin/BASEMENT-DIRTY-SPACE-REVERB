@@ -36,6 +36,7 @@ public:
 
 private:
     juce::dsp::Reverb reverb;
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> preDelayLine;
     juce::dsp::Reverb::Parameters reverbParameters;
     juce::AudioBuffer<float> dryBuffer;
     int currentProgram = 0;
