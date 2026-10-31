@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.22)
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-project(BASEMENT VERSION 1.0.0)
+project(BASEMENT VERSION 1.0.1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 FetchContent_Declare(JUCE GIT_REPOSITORY https://github.com/juce-framework/JUCE.git GIT_TAG 8.0.6)
 FetchContent_MakeAvailable(JUCE)
 juce_add_plugin(BASEMENT COMPANY_NAME "Audio Punks" BUNDLE_ID "com.audiopunks.basement"
- PLUGIN_MANUFACTURER_CODE AudP PLUGIN_CODE Bsm1 FORMATS VST3 PRODUCT_NAME "BASEMENT - Dirty Space Reverb"
+ PLUGIN_MANUFACTURER_CODE AUDP PLUGIN_CODE BSM1 FORMATS VST3 PRODUCT_NAME "BASEMENT - Dirty Space Reverb"
  IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE)
 juce_generate_juce_header(BASEMENT)
 target_sources(BASEMENT PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp)
