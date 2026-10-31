@@ -100,6 +100,7 @@ void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const float lowCutHz = parameters.getRawParameterValue("lowcut")->load();
     const float highCutHz = parameters.getRawParameterValue("highcut")->load();
     const float dirt = parameters.getRawParameterValue("dirt")->load() * 0.01f;
+    const bool freeze = parameters.getRawParameterValue("freeze")->load() >= 0.5f;
 
     preDelayLine.setDelay(preDelayMs * static_cast<float>(getSampleRate()) * 0.001f);
 
@@ -119,7 +120,7 @@ void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     reverbParameters.width = juce::jlimit(0.0f, 1.0f, width);
     reverbParameters.wetLevel = 1.0f;
     reverbParameters.dryLevel = 0.0f;
-    reverbParameters.freezeMode = 0.0f;
+    reverbParameters.freezeMode = freeze ? 1.0f : 0.0f;
     reverb.setParameters(reverbParameters);
 
     juce::dsp::AudioBlock<float> audioBlock(buffer);
