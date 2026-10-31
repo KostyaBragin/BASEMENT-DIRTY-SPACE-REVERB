@@ -4,6 +4,8 @@
 class BasementAudioProcessor : public juce::AudioProcessor
 {
 public:
+    using APVTS = juce::AudioProcessorValueTreeState;
+
     BasementAudioProcessor();
     ~BasementAudioProcessor() override = default;
 
@@ -20,15 +22,21 @@ public:
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 0.0; }
 
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram(int) override {}
-    const juce::String getProgramName(int) override { return "Diagnostic"; }
+    int getNumPrograms() override { return 5; }
+    int getCurrentProgram() override { return currentProgram; }
+    void setCurrentProgram(int) override;
+    const juce::String getProgramName(int) override;
     void changeProgramName(int, const juce::String&) override {}
 
     void getStateInformation(juce::MemoryBlock&) override;
     void setStateInformation(const void*, int) override;
 
+    APVTS parameters;
+    void loadPreset(int);
+
 private:
+    int currentProgram = 0;
+    static APVTS::ParameterLayout layout();
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BasementAudioProcessor)
 };
