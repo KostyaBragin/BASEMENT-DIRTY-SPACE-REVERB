@@ -50,6 +50,13 @@ void BasementAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
 
     reverb.prepare(spec);
     reverb.reset();
+    for (int channel = 0; channel < 2; ++channel)
+    {
+        lowCutFilters[channel].reset();
+        highCutFilters[channel].reset();
+    }
+    lastLowCutHz = -1.0f;
+    lastHighCutHz = -1.0f;
     dryBuffer.setSize(getTotalNumOutputChannels(), samplesPerBlock);
 }
 
@@ -57,6 +64,11 @@ void BasementAudioProcessor::releaseResources()
 {
     preDelayLine.reset();
     reverb.reset();
+    for (int channel = 0; channel < 2; ++channel)
+    {
+        lowCutFilters[channel].reset();
+        highCutFilters[channel].reset();
+    }
 }
 
 void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -85,6 +97,8 @@ void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const float damping = parameters.getRawParameterValue("damping")->load() * 0.01f;
     const float width = parameters.getRawParameterValue("width")->load() * 0.005f;
     const float mix = parameters.getRawParameterValue("mix")->load() * 0.01f;
+    const float lowCutHz = parameters.getRawParameterValue("lowcut")->load();
+    const float highCutHz = parameters.getRawParameterValue("highcut")->load();
 
     preDelayLine.setDelay(preDelayMs * static_cast<float>(getSampleRate()) * 0.001f);
 
@@ -109,6 +123,34 @@ void BasementAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     juce::dsp::AudioBlock<float> audioBlock(buffer);
     reverb.process(juce::dsp::ProcessContextReplacing<float>(audioBlock));
+
+    const float safeLowCutHz = juce::jlimit(20.0f,
+        static_cast<float>(getSampleRate() * 0.45), lowCutHz);
+    const float safeHighCutHz = juce::jlimit(1000.0f,
+        static_cast<float>(getSampleRate() * 0.45), highCutHz);
+
+    if (safeLowCutHz != lastLowCutHz)
+    {
+        const auto coefficients = juce::IIRCoefficients::makeHighPass(getSampleRate(), safeLowCutHz);
+        for (int channel = 0; channel < numChannels; ++channel)
+            lowCutFilters[channel].setCoefficients(coefficients);
+        lastLowCutHz = safeLowCutHz;
+    }
+
+    if (safeHighCutHz != lastHighCutHz)
+    {
+        const auto coefficients = juce::IIRCoefficients::makeLowPass(getSampleRate(), safeHighCutHz);
+        for (int channel = 0; channel < numChannels; ++channel)
+            highCutFilters[channel].setCoefficients(coefficients);
+        lastHighCutHz = safeHighCutHz;
+    }
+
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        auto* wet = buffer.getWritePointer(channel);
+        lowCutFilters[channel].processSamples(wet, numSamples);
+        highCutFilters[channel].processSamples(wet, numSamples);
+    }
 
     for (int channel = 0; channel < numChannels; ++channel)
     {
