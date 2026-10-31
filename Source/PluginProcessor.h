@@ -35,6 +35,9 @@ public:
     void loadPreset(int);
 
 private:
+    juce::dsp::Reverb reverb;
+    juce::dsp::Reverb::Parameters reverbParameters;
+    juce::AudioBuffer<float> dryBuffer;
     int currentProgram = 0;
     static APVTS::ParameterLayout layout();
 
