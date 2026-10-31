@@ -27,9 +27,22 @@ jobs:
           }
           Write-Host "Packaging VST3 bundle: $($plugin.FullName)"
           Copy-Item -Path $plugin.FullName -Destination package/BASEMENT.vst3 -Recurse -Force
-          Compress-Archive -Path package/BASEMENT.vst3 -DestinationPath BASEMENT-VST3-Windows-x64.zip -Force
+          $moduleInfo = "package/BASEMENT.vst3/Contents/Resources/moduleinfo.json"
+          if (Test-Path $moduleInfo) {
+            $jsonText = Get-Content $moduleInfo -Raw
+            $jsonText = [regex]::Replace($jsonText, ',(\s*[}\]])', '$1')
+            $parsed = $jsonText | ConvertFrom-Json
+            $jsonText = $parsed | ConvertTo-Json -Depth 100
+            [System.IO.File]::WriteAllText((Resolve-Path $moduleInfo), $jsonText, [System.Text.UTF8Encoding]::new($false))
+            Write-Host "Validated and normalized moduleinfo.json"
+          } else {
+            throw "VST3 moduleinfo.json is missing"
+          }
+          $binary = Get-ChildItem -Path package/BASEMENT.vst3/Contents/x86_64-win -Filter *.vst3 -File
+          if (-not $binary) { throw "VST3 x64 binary is missing" }
+          Write-Host "VST3 binary: $($binary.FullName), $($binary.Length) bytes"
       - uses: actions/upload-artifact@v4
         with:
           name: BASEMENT-VST3-Windows-x64
-          path: BASEMENT-VST3-Windows-x64.zip
+          path: package/BASEMENT.vst3
           if-no-files-found: error
