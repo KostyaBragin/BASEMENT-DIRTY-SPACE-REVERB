@@ -53,9 +53,11 @@ void SMProductionGlueAudioProcessor::prepareToPlay(double sampleRate, int)
 void SMProductionGlueAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
-    const int samples = buffer.getNumSamples();
-    const int channels = buffer.getNumChannels();
+    auto mainInput = getBusBuffer(buffer, true, 0);
+    auto outputBus = getBusBuffer(buffer, false, 0);
     auto sidechain = getBusBuffer(buffer, true, 1);
+    const int samples = outputBus.getNumSamples();
+    const int channels = outputBus.getNumChannels();
     const int sidechainChannels = sidechain.getNumChannels();
 
     const float amount = state.getRawParameterValue("glue")->load() * 0.01f;
@@ -76,8 +78,9 @@ void SMProductionGlueAudioProcessor::processBlock(juce::AudioBuffer<float>& buff
         if (sidechainChannels > 1) sc[1] = sidechain.getSample(1, i);
         else sc[1] = sc[0];
 
-        const float dry[2] = { buffer.getSample(0, i),
-            channels > 1 ? buffer.getSample(1, i) : buffer.getSample(0, i) };
+        const float dry[2] = { mainInput.getNumChannels() > 0 ? mainInput.getSample(0, i) : 0.0f,
+            mainInput.getNumChannels() > 1 ? mainInput.getSample(1, i)
+                : (mainInput.getNumChannels() > 0 ? mainInput.getSample(0, i) : 0.0f) };
         float processed[2] = { dry[0], dry[1] };
 
         // Six perceptual detector bands. Their filtered components are mixed back
@@ -118,7 +121,7 @@ void SMProductionGlueAudioProcessor::processBlock(juce::AudioBuffer<float>& buff
         for (int ch = 0; ch < channels; ++ch)
         {
             const float wetSample = ch == 0 ? processed[0] : processed[1];
-            buffer.setSample(ch, i, (dry[ch] * (1.0f - wet) + wetSample * wet) * outputGain);
+            outputBus.setSample(ch, i, (dry[ch] * (1.0f - wet) + wetSample * wet) * outputGain);
         }
     }
 }
