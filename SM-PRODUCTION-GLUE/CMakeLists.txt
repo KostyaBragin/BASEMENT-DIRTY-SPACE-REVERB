@@ -16,4 +16,4 @@ juce_add_plugin(SMProductionGlue
  EDITOR_WANTS_KEYBOARD_FOCUS FALSE COPY_PLUGIN_AFTER_BUILD FALSE)
 target_sources(SMProductionGlue PRIVATE Source/PluginProcessor.cpp Source/PluginEditor.cpp)
 target_compile_definitions(SMProductionGlue PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
-target_link_libraries(SMProductionGlue PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce:: juce_recommended_config_flags juce_recommended_lto_flags juce_recommended_warning_flags)
+target_link_libraries(SMProductionGlue PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce_recommended_config_flags juce_recommended_lto_flags juce_recommended_warning_flags)
