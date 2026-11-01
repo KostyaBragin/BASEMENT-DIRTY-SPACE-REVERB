@@ -1,0 +1,8 @@
+#include "PluginEditor.h"
+SMProductionGlueAudioProcessorEditor::SMProductionGlueAudioProcessorEditor(SMProductionGlueAudioProcessor& p):AudioProcessorEditor(&p),proc(p){
+ const char* ids[]={"glue","focus","space","time","mix","output"}; const char* names[]={"GLUE","FOCUS","SPACE","TIME","MIX","OUTPUT"};
+ for(int i=0;i<6;++i){addAndMakeVisible(knobs[i]);addAndMakeVisible(labels[i]);labels[i].setText(names[i],juce::dontSendNotification);labels[i].setJustificationType(juce::Justification::centred);labels[i].setColour(juce::Label::textColourId,juce::Colour(0xffd9d0e8));links[i]=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(proc.state,ids[i],knobs[i]);}
+ setSize(720,390);
+}
+void SMProductionGlueAudioProcessorEditor::paint(juce::Graphics& g){g.fillAll(juce::Colour(0xff111018));g.setColour(juce::Colour(0xffa67cff));g.fillRoundedRectangle(18,18,getWidth()-36,72,12);g.setColour(juce::Colour(0xff171520));g.fillRoundedRectangle(22,22,getWidth()-44,64,9);g.setColour(juce::Colours::white);g.setFont(juce::Font(27,juce::Font::bold));g.drawText("SM PRODUCTION",38,28,300,28,juce::Justification::left);g.setColour(juce::Colour(0xffbba8d8));g.setFont(juce::Font(15));g.drawText("GLUE  /  PSYCHOACOUSTIC VOCAL INTEGRATION",38,57,520,20,juce::Justification::left);g.setColour(juce::Colour(0xff776b8d));g.drawText("MAIN: VOCAL     •     SIDECHAIN: INSTRUMENTAL MIX",24,350,getWidth()-48,20,juce::Justification::centred);}
+void SMProductionGlueAudioProcessorEditor::resized(){for(int i=0;i<6;++i){int x=28+i*114;labels[i].setBounds(x,125,104,24);knobs[i].setBounds(x,155,104,150);}}
