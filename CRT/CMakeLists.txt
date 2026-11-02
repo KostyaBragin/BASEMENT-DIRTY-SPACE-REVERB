@@ -22,6 +22,9 @@ juce_add_plugin(SMProductionCRT
   EDITOR_WANTS_KEYBOARD_FOCUS FALSE
   COPY_PLUGIN_AFTER_BUILD FALSE)
 
+# Generate the JUCE amalgamated header included by the plugin source files.
+juce_generate_juce_header(SMProductionCRT)
+
 target_sources(SMProductionCRT PRIVATE
   Source/PluginProcessor.cpp
   Source/PluginEditor.cpp)
