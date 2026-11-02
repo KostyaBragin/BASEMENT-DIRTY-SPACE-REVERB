@@ -30,6 +30,10 @@ SMProductionCRTEditor::SMProductionCRTEditor(SMProductionCRTProcessor& p)
     stereoAttach = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(processor.parameters, "STEREO", stereo);
     tapeAttach = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(processor.parameters, "TAPE", tape);
     powerAttach = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(processor.parameters, "POWER", power);
+
+    // setSize() ran before the child controls were created, so JUCE had
+    // laid out an empty editor. Run the layout once all controls exist.
+    resized();
 }
 
 void SMProductionCRTEditor::paint(juce::Graphics& g)
